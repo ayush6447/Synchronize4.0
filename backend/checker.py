@@ -224,6 +224,11 @@ class TitleChecker:
                   primary_reason = lex_reason
              else:
                   primary_reason = sem_reason
+        else:
+             # REQUIREMENT 3: The system will track current applications and use them for future reference, 
+             # rejecting similar titles submitted later by other users.
+             # We add the newly approved title to the in-memory set so subsequent checks fail at Stage B (Exact Match).
+             self.existing_titles_set.add(title.lower())
                   
         # If Lexical hit high, inject it into top_K
         if lex_score > 60:
