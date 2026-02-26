@@ -7,9 +7,12 @@ import time
 import jellyfish
 from sentence_transformers import SentenceTransformer
 
-# Paths
-DATASET_PATH = r"l:\Synchronize4.0\dataset\aggregated_dataset_hindi.csv"
-INDEX_DIR = r"l:\Synchronize4.0\backend\index"
+# Paths — can be overridden via environment variables for portability
+DATASET_PATH = os.environ.get(
+    "DATASET_PATH",
+    os.path.join(os.path.dirname(__file__), "..", "dataset", "aggregated_dataset_hindi.csv")
+)
+INDEX_DIR = os.environ.get("INDEX_DIR", os.path.join(os.path.dirname(__file__), "index"))
 MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 
 def compute_phonetic(text):
@@ -19,7 +22,13 @@ def compute_phonetic(text):
 def build_index():
     print("Loading dataset...")
     df = pd.read_csv(DATASET_PATH, encoding='utf-8-sig')
-    
+
+    # Validate required columns before processing
+    required_cols = {'Title Name', 'Hindi Title', 'Periodity'}
+    missing = required_cols - set(df.columns)
+    if missing:
+        raise ValueError(f"Dataset is missing required column(s): {missing}")
+
     # Cleaning
     print(f"Initial rows: {len(df)}")
     df['Title Name'] = df['Title Name'].fillna('').astype(str).str.strip().str.lower()

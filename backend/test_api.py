@@ -18,15 +18,11 @@ for t in tests:
     print(f"Input: {t['payload']['title']}")
     try:
         t0 = time.time()
-        resp = requests.post(URL, json=t['payload'])
+        resp = requests.post(URL, json=t['payload'], timeout=30)
         elapsed = time.time() - t0
-        # The elapsed time print is now part of the new comprehensive print
-        # print(f"Response Time: {elapsed:.3f}s")
         if resp.status_code == 200:
             data = resp.json()
             print(f'''
---- Testing: {t['name']} ---
-Input: {t['payload']['title']}
 Response Time (Client): {elapsed:.3f}s
 Response Time (API): {data.get('inference_time_seconds', 0)}s
 Approved: {data['approved']}
@@ -41,3 +37,4 @@ Smart Suggestions: {json.dumps(data.get('suggestions', []), indent=2)}
             print(f"Error: {resp.status_code} - {resp.text}")
     except Exception as e:
         print(f"Failed to connect to API: {e}")
+

@@ -1,13 +1,13 @@
 import re
-import jellyfish
-from thefuzz import fuzz
 import faiss
 import pickle
 import numpy as np
 import os
+import threading
 from sentence_transformers import SentenceTransformer
 
-INDEX_DIR = r"l:\Synchronize4.0\backend\index"
+# INDEX_DIR can be overridden via the INDEX_DIR environment variable for portability
+INDEX_DIR = os.environ.get("INDEX_DIR", os.path.join(os.path.dirname(__file__), "index"))
 
 class TitleChecker:
     def __init__(self):
@@ -20,6 +20,8 @@ class TitleChecker:
             print("WARNING: FAISS index not found. Run build_index.py first.")
             
         # Load Metadata
+        # NOTE: pickle.load is used here for performance on a trusted, locally-generated file.
+        # Do NOT expose the metadata.pkl path to untrusted input.
         meta_path = os.path.join(INDEX_DIR, "metadata.pkl")
         if os.path.exists(meta_path):
             with open(meta_path, 'rb') as f:
@@ -28,8 +30,9 @@ class TitleChecker:
             self.metadata = []
             
         # Extract purely sets for ultra-fast lookup
-        self.existing_titles_set = {str(m['Title Name']).lower() for m in self.metadata}
-        self.existing_hindi_set = {str(m['Hindi Title']) for m in self.metadata if m['Hindi Title']}
+        self.existing_titles_set = {str(m['Title Name']).lower() for m in self.metadata if 'Title Name' in m}
+        self.existing_hindi_set = {str(m['Hindi Title']) for m in self.metadata if m.get('Hindi Title')}
+        self._titles_lock = threading.Lock()
         
         # Load Transformer model for online inference
         self.model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
@@ -139,10 +142,12 @@ class TitleChecker:
         
         for i in range(k):
             idx = indices[0][i]
-            raw_score = float(distances[0][i]) * 100  # Raw Cosine similarity to percentage
-            
+            # FAISS IndexFlatIP on L2-normalised vectors returns cosine similarity in [-1, 1].
+            # Clamp to [0, 1] then scale to percentage.
+            raw_score = float(np.clip(distances[0][i], 0.0, 1.0)) * 100
+
             # Non-linear tuning for MiniLM density:
-            # MiniLM naturally clusters even unrelated text around 40-50%. 
+            # MiniLM naturally clusters even unrelated text around 40-50%.
             # A raw 60% is actually weak. A raw 85%+ is strong.
             # We apply a penalty to drastically lower weak matches so novel titles can pass.
             if raw_score <= 65:
@@ -151,18 +156,19 @@ class TitleChecker:
                 score = raw_score * 0.8  # Moderate penalty
             else:
                 score = raw_score        # Keep high matches intact
-                
-            if idx != -1:
+
+            if idx != -1 and idx < len(self.metadata):
                 match_meta = self.metadata[idx]
+                title_name = match_meta.get('Title Name', 'Unknown')
                 top_k_matches.append({
-                    "title": match_meta['Title Name'],
+                    "title": title_name,
                     "score": round(score, 2),
                     "stage": "Semantic FAISS"
                 })
                 if score > top_score:
                     top_score = score
-                    top_reason = f"Conceptually similar to '{match_meta['Title Name']}'"
-                
+                    top_reason = f"Conceptually similar to '{title_name}'"
+
         return top_score, top_reason or "No semantic matches found", top_k_matches
 
     def verify(self, title: str, hindi_title: str = ""):
@@ -220,23 +226,23 @@ class TitleChecker:
         
         primary_reason = "Title appears unique and compliant."
         if not approved:
-             if lex_score > sem_score:
-                  primary_reason = lex_reason
-             else:
-                  primary_reason = sem_reason
+            if lex_score > sem_score:
+                primary_reason = lex_reason
+            else:
+                primary_reason = sem_reason
         else:
-             # REQUIREMENT 3: The system will track current applications and use them for future reference, 
-             # rejecting similar titles submitted later by other users.
-             # We add the newly approved title to the in-memory set so subsequent checks fail at Stage B (Exact Match).
-             self.existing_titles_set.add(title.lower())
-                  
+            # REQUIREMENT 3: The system will track current applications and use them for future reference,
+            # rejecting similar titles submitted later by other users.
+            # Thread-safe update of the in-memory set.
+            with self._titles_lock:
+                self.existing_titles_set.add(title.lower())
+
         # If Lexical hit high, inject it into top_K
         if lex_score > 60:
-             # Extract the name from reason (e.g. Lexically very similar to 'Name')
-             import re
-             m = re.search(r"'(.*?)'", lex_reason)
-             if m:
-                 top_k_matches.insert(0, {"title": m.group(1), "score": lex_score, "stage": "Lexical Proxy"})
+            # Extract the name from reason (e.g. Lexically very similar to 'Name')
+            m = re.search(r"'(.*?)'", lex_reason)
+            if m:
+                top_k_matches.insert(0, {"title": m.group(1), "score": lex_score, "stage": "Lexical Proxy"})
 
         # Determine Concept Tags
         tags = self.assign_concept_tags(title)

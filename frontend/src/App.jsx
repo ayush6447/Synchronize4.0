@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Search, ShieldAlert, ShieldCheck, AlertCircle, Link as LinkIcon, CheckCircle } from 'lucide-react';
 import { ethers } from 'ethers';
@@ -11,12 +11,20 @@ const CONTRACT_ABI = [
   "function isRegistered(bytes32) public view returns (bool)"
 ];
 
+// API base URL — override in production via VITE_API_URL environment variable
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+// Sepolia chain ID
+const SEPOLIA_CHAIN_ID = '0xaa36a7';
+
 function App() {
   const [title, setTitle] = useState('');
   const [hindiTitle, setHindiTitle] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  // Capture the title at verification time to avoid a race condition where
+  // the user edits the input between verification and blockchain registration.
+  const verifiedTitleRef = useRef('');
 
   // Blockchain State
   const [walletConnected, setWalletConnected] = useState(false);
@@ -83,27 +91,34 @@ function App() {
       return;
     }
 
+    // Validate network before submitting — only Sepolia is supported
+    const currentChain = await window.ethereum.request({ method: 'eth_chainId' });
+    if (currentChain !== SEPOLIA_CHAIN_ID) {
+      alert(`Please switch MetaMask to the Sepolia test network before registering. (Current chainId: ${currentChain})`);
+      return;
+    }
+
     setTxLoading(true);
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-      // Hash the title locally (same logic the PRGI would use to verify later)
-      const titleBytes = ethers.toUtf8Bytes(title.toLowerCase().trim());
+      // Use the title captured at verification time (not the live input) to prevent a race condition
+      const titleToRegister = verifiedTitleRef.current;
+      const titleBytes = ethers.toUtf8Bytes(titleToRegister.toLowerCase().trim());
       const titleHash = ethers.keccak256(titleBytes);
 
       console.log(`Sending transaction to register hash: ${titleHash}`);
 
       // Call contract
       const tx = await contract.registerTitle(titleHash);
-
       console.log("Transaction dispatched:", tx.hash);
-      setTxHash(tx.hash);
 
-      // Wait for confirmation
+      // Wait for on-chain confirmation before showing success
       await tx.wait();
       console.log("Transaction confirmed!");
+      setTxHash(tx.hash);
 
     } catch (err) {
       console.error("Blockchain error:", err);
@@ -154,13 +169,16 @@ function App() {
       return;
     }
 
+    // Capture the current title value so blockchain registration uses the same string
+    verifiedTitleRef.current = title;
+
     setLoading(true);
     setError('');
     setResult(null);
 
     try {
       // POST to FastAPI backend
-      const response = await axios.post('http://127.0.0.1:8000/verify', {
+      const response = await axios.post(`${API_BASE_URL}/verify`, {
         title: title,
         hindi_title: hindiTitle
       });
@@ -323,21 +341,21 @@ function App() {
                     <span className="flex-shrink-0 h-6 w-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">A</span>
                     <div>
                       <p className="text-sm font-medium text-gray-900">Hard Rule Compliance</p>
-                      <p className="text-sm text-gray-500">{result.stages.A}</p>
+                      <p className="text-sm text-gray-500">{result?.stages?.A ?? '—'}</p>
                     </div>
                   </div>
                   <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex items-start">
                     <span className="flex-shrink-0 h-6 w-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">B</span>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Lexical & Phonetic Check</p>
-                      <p className="text-sm text-gray-500">{result.stages.B}</p>
+                      <p className="text-sm font-medium text-gray-900">Lexical &amp; Phonetic Check</p>
+                      <p className="text-sm text-gray-500">{result?.stages?.B ?? '—'}</p>
                     </div>
                   </div>
                   <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex items-start">
                     <span className="flex-shrink-0 h-6 w-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">C</span>
                     <div>
                       <p className="text-sm font-medium text-gray-900">AI Semantic Check</p>
-                      <p className="text-sm text-gray-500">{result.stages.C}</p>
+                      <p className="text-sm text-gray-500">{result?.stages?.C ?? '—'}</p>
                     </div>
                   </div>
                 </div>
