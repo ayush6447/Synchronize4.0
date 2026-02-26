@@ -18,7 +18,7 @@ _rate_limit_lock = threading.Lock()
 
 # CORS: do NOT combine allow_origins=["*"] with allow_credentials=True — browsers reject it.
 # Specify explicit allowed origins via the ALLOWED_ORIGINS env var (comma-separated).
-_raw_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+_raw_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000")
 ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 app.add_middleware(
