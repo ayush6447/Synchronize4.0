@@ -24,6 +24,11 @@ function App() {
   const [txHash, setTxHash] = useState('');
   const [txLoading, setTxLoading] = useState(false);
 
+  // Public Verification State
+  const [lookupHash, setLookupHash] = useState('');
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupResult, setLookupResult] = useState(null);
+
   // Check if wallet is already connected
   useEffect(() => {
     checkWalletConnection();
@@ -94,6 +99,36 @@ function App() {
       }
     } finally {
       setTxLoading(false);
+    }
+  };
+
+  const handleHashLookup = async (e) => {
+    e.preventDefault();
+    if (!lookupHash || !lookupHash.startsWith("0x") || lookupHash.length !== 66) {
+      alert("Please enter a valid 32-byte Keccak-256 hash (starting with 0x).");
+      return;
+    }
+
+    setLookupLoading(true);
+    setLookupResult(null);
+    try {
+      // Connect to public provider (don't need wallet connected just to read)
+      let provider;
+      if (window.ethereum) {
+        provider = new ethers.BrowserProvider(window.ethereum);
+      } else {
+        // Fallback to a public RPC if no metamask (e.g., Sepolia public RPC)
+        provider = new ethers.JsonRpcProvider("https://rpc.sepolia.org");
+      }
+
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+      const isRegistered = await contract.isRegistered(lookupHash);
+      setLookupResult(isRegistered);
+    } catch (err) {
+      console.error("Lookup error:", err);
+      alert("Failed to query the blockchain network.");
+    } finally {
+      setLookupLoading(false);
     }
   };
 
@@ -360,6 +395,49 @@ function App() {
             </div>
           )}
         </div>
+
+        {/* PUBLIC VERIFICATION PORTAL */}
+        <div className="mt-12 bg-white rounded-2xl shadow-xl overflow-hidden border-t-8 border-indigo-900">
+          <div className="p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Public Ledger Verification</h2>
+            <p className="text-gray-600 mb-6">Auditors and the public can paste an SHA3 (Keccak-256) hash below to verify mathematically if a specific title has been approved and logged into the PRGI smart contract.</p>
+
+            <form onSubmit={handleHashLookup} className="flex space-x-4">
+              <input
+                type="text"
+                required
+                className="flex-1 appearance-none border border-gray-300 rounded-xl shadow-sm px-4 py-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
+                placeholder="0x..."
+                value={lookupHash}
+                onChange={(e) => setLookupHash(e.target.value)}
+              />
+              <button
+                type="submit"
+                disabled={lookupLoading}
+                className={`px-6 py-3 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white transition-all ${lookupLoading ? 'bg-indigo-400' : 'bg-indigo-900 hover:bg-black'}`}
+              >
+                {lookupLoading ? 'Querying Chain...' : 'Lookup Hash'}
+              </button>
+            </form>
+
+            {lookupResult !== null && (
+              <div className={`mt-6 p-4 rounded-xl flex items-center ${lookupResult ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
+                {lookupResult ? (
+                  <>
+                    <ShieldCheck className="h-6 w-6 mr-3 text-green-600" />
+                    <span className="font-semibold text-lg">Verified: This Hash exists on the PRGI Blockchain Registry.</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldAlert className="h-6 w-6 mr-3 text-red-600" />
+                    <span className="font-semibold text-lg">Not Found: This Hash has never been registered.</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );
