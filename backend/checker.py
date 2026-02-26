@@ -139,8 +139,19 @@ class TitleChecker:
         
         for i in range(k):
             idx = indices[0][i]
-            score = float(distances[0][i]) * 100  # Cosine similarity to percentage
+            raw_score = float(distances[0][i]) * 100  # Raw Cosine similarity to percentage
             
+            # Non-linear tuning for MiniLM density:
+            # MiniLM naturally clusters even unrelated text around 40-50%. 
+            # A raw 60% is actually weak. A raw 85%+ is strong.
+            # We apply a penalty to drastically lower weak matches so novel titles can pass.
+            if raw_score <= 65:
+                score = raw_score * 0.5  # Heavy penalty for weak clusters
+            elif raw_score <= 80:
+                score = raw_score * 0.8  # Moderate penalty
+            else:
+                score = raw_score        # Keep high matches intact
+                
             if idx != -1:
                 match_meta = self.metadata[idx]
                 top_k_matches.append({
