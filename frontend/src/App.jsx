@@ -22,6 +22,7 @@ function App() {
   const [walletConnected, setWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
   const [isConnectingWallet, setIsConnectingWallet] = useState(false);
+  const [walletError, setWalletError] = useState('');
   const [txHash, setTxHash] = useState('');
   const [txLoading, setTxLoading] = useState(false);
 
@@ -51,24 +52,25 @@ function App() {
 
   const connectWallet = async () => {
     if (!window.ethereum) {
-      alert("Please install MetaMask to interact with the blockchain.");
+      setWalletError("Please install MetaMask to interact with the blockchain.");
       return;
     }
     if (isConnectingWallet) return;
 
     setIsConnectingWallet(true);
+    setWalletError('');
     try {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       setWalletConnected(true);
       setWalletAddress(accounts[0]);
     } catch (err) {
-      console.error("Wallet connection failed:", err);
       if (err.code === -32002) {
-        alert("A connection request is already pending. Please open the MetaMask extension popup to accept it.");
+        setWalletError("MetaMask connection is pending. Please open the browser extension to accept it.");
       } else if (err.code === 4001) {
-        console.log("User rejected the wallet connection request.");
+        setWalletError("Connection request was rejected.");
       } else {
-        alert("Wallet connection failed. See console for details.");
+        console.error("Wallet connection failed:", err);
+        setWalletError("Failed to connect wallet.");
       }
     } finally {
       setIsConnectingWallet(false);
@@ -177,7 +179,7 @@ function App() {
       <div className="max-w-3xl mx-auto">
 
         {/* Wallet Connection Bar */}
-        <div className="flex justify-end mb-4">
+        <div className="flex flex-col items-end mb-4">
           {walletConnected ? (
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
               <span className="w-2 h-2 mr-2 bg-green-500 rounded-full"></span>
@@ -191,6 +193,11 @@ function App() {
             >
               {isConnectingWallet ? 'Connecting...' : 'Connect Wallet'}
             </button>
+          )}
+          {walletError && (
+            <span className="mt-2 text-xs font-medium text-red-500 bg-red-50 px-2 py-1 rounded-md border border-red-100">
+              {walletError}
+            </span>
           )}
         </div>
 
