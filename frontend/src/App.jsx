@@ -3,8 +3,8 @@ import axios from 'axios';
 import { Search, ShieldAlert, ShieldCheck, AlertCircle, Link as LinkIcon, CheckCircle } from 'lucide-react';
 import { ethers } from 'ethers';
 
-// Placeholder Contract Address - In a real scenario, this would be the deployed testnet address
-const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
+// Deployed PRGI TitleRegistry Contract (Sepolia Testnet)
+const CONTRACT_ADDRESS = "0x60Ceaa19201e1C6C19b5828b4Dd5C450E6148DF9";
 // Minimal ABI to call registerTitle
 const CONTRACT_ABI = [
   "function registerTitle(bytes32 _titleHash) public",
