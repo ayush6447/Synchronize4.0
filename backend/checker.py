@@ -188,18 +188,20 @@ class TitleChecker:
         sem_score, sem_reason, top_k_matches = self.check_stage_c_semantic(title, hindi_title)
         
         # D: Final Scoring
-        # S_max = highest similarity
+        # S_max = highest similarity (0 to 100)
         s_max = max(lex_score, sem_score)
         
         # Determine approval threshold
+        # We need the probability of being unique/safe.
+        # If max similarity is 100, probability is 0. If max similarity is 0, probability is 100.
         probability = max(0, 100 - s_max)
         
         if probability <= 30:
             confidence_bucket = "High Risk"
             approved = False
-        elif probability <= 60:
+        elif probability <= 50:
             confidence_bucket = "Needs Review"
-            approved = False # Require manual review for 31-60
+            approved = False # Require manual review for 31-50
         else:
             confidence_bucket = "Likely Acceptable"
             approved = True
