@@ -21,6 +21,7 @@ function App() {
   // Blockchain State
   const [walletConnected, setWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
+  const [isConnectingWallet, setIsConnectingWallet] = useState(false);
   const [txHash, setTxHash] = useState('');
   const [txLoading, setTxLoading] = useState(false);
 
@@ -53,12 +54,24 @@ function App() {
       alert("Please install MetaMask to interact with the blockchain.");
       return;
     }
+    if (isConnectingWallet) return;
+
+    setIsConnectingWallet(true);
     try {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       setWalletConnected(true);
       setWalletAddress(accounts[0]);
     } catch (err) {
       console.error("Wallet connection failed:", err);
+      if (err.code === -32002) {
+        alert("A connection request is already pending. Please open the MetaMask extension popup to accept it.");
+      } else if (err.code === 4001) {
+        console.log("User rejected the wallet connection request.");
+      } else {
+        alert("Wallet connection failed. See console for details.");
+      }
+    } finally {
+      setIsConnectingWallet(false);
     }
   };
 
@@ -171,8 +184,12 @@ function App() {
               {walletAddress.substring(0, 6)}...{walletAddress.substring(38)} connected
             </span>
           ) : (
-            <button onClick={connectWallet} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-              Connect Wallet
+            <button
+              onClick={connectWallet}
+              disabled={isConnectingWallet}
+              className={`text-sm font-medium transition-colors ${isConnectingWallet ? 'text-gray-400 cursor-wait' : 'text-indigo-600 hover:text-indigo-800'}`}
+            >
+              {isConnectingWallet ? 'Connecting...' : 'Connect Wallet'}
             </button>
           )}
         </div>
