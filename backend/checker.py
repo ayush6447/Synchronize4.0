@@ -104,7 +104,7 @@ class TitleChecker:
             title_lower, 
             self.existing_titles_set, 
             scorer=rfuzz.ratio,
-            score_cutoff=60  # Only care if it's somewhat similar
+            score_cutoff=75  # Tuned up from 60: must be highly lexically similar to flag
         )
         
         if best_match:
@@ -193,15 +193,16 @@ class TitleChecker:
         
         # Determine approval threshold
         # We need the probability of being unique/safe.
-        # If max similarity is 100, probability is 0. If max similarity is 0, probability is 100.
         probability = max(0, 100 - s_max)
         
-        if probability <= 30:
+        # Tuned logic for real-world PRGI registry data (high noise floor of generic English/Hindi journalism words)
+        # Therefore, we only want to reject titles that are > 75% conceptually identical
+        if probability <= 25:
             confidence_bucket = "High Risk"
             approved = False
-        elif probability <= 50:
+        elif probability <= 40:
             confidence_bucket = "Needs Review"
-            approved = False # Require manual review for 31-50
+            approved = False # Require manual review for 26-40
         else:
             confidence_bucket = "Likely Acceptable"
             approved = True
