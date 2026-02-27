@@ -35,7 +35,7 @@ export function Navbar() {
           <Image
             src="/custom-logo.svg"
             alt="Logo"
-            width={40}
+            width={60}
             height={40}
             className="h-10 w-auto"
           />

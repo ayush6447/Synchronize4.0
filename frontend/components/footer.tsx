@@ -28,7 +28,7 @@ export function Footer() {
                   <Image
                     src="/custom-logo.svg"
                     alt="Logo"
-                    width={32}
+                    width={48}
                     height={32}
                     className="h-8 w-auto"
                   />
