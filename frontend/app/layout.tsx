@@ -1,31 +1,37 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Geist, Geist_Mono, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+import localFont from 'next/font/local'
+
+const timesSans = localFont({
+  src: '../font/times_sans_serif/TIMESS__.ttf',
+  variable: '--font-times-sans',
+})
+
+const playfairLocal = localFont({
+  src: '../font/Playfair/Playfair-VariableFont_opsz,wdth,wght.ttf',
+  variable: '--font-playfair-local',
+})
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: '--font-geist-mono',
+})
 
 export const metadata: Metadata = {
-  title: 'TitleGuard - PRGI Title Verification & Compliance System',
+  title: 'Title Integrity System - PRGI Title Verification & Compliance System',
   description: 'Intelligent title similarity detection and compliance validation for the Press Registrar General of India. NLP-powered semantic analysis across 160,000+ registered titles.',
   generator: 'v0.app',
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
+        url: '/custom-logo.svg',
         type: 'image/svg+xml',
       },
     ],
-    apple: '/apple-icon.png',
+    apple: '/custom-logo.svg',
   },
 }
 
@@ -43,7 +49,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased">
+      <body className={`${timesSans.variable} ${playfairLocal.variable} ${geistMono.variable} antialiased`}>
         <WalletProvider>
           {children}
         </WalletProvider>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { FileCheck } from "lucide-react"
+import Image from "next/image"
 
 import { useWallet } from "@/context/wallet-context"
 
@@ -30,12 +30,18 @@ export function Navbar() {
       role="navigation"
       aria-label="Main navigation"
     >
-      <a href="#" className="group flex items-center gap-2" aria-label="TitleGuard home">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 transition-all duration-300 group-hover:bg-primary/20 group-hover:shadow-md group-hover:shadow-primary/10">
-          <FileCheck className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
+      <a href="#" className="group flex items-center gap-2" aria-label="Title Integrity System home">
+        <div className="flex items-center justify-center transition-all duration-300 group-hover:scale-105">
+          <Image
+            src="/custom-logo.svg"
+            alt="Logo"
+            width={40}
+            height={40}
+            className="h-10 w-auto"
+          />
         </div>
         <span className="text-3xl font-bold tracking-tight text-foreground">
-          TitleGuard
+          Title Integrity System
         </span>
       </a>
 

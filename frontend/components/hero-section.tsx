@@ -120,10 +120,10 @@ export function HeroSection() {
 
       <ScrollReveal variant="blur-in" delay={200} duration={1200}>
         <h1 className="max-w-5xl text-balance text-center text-5xl font-bold leading-tight tracking-tight text-foreground sm:text-6xl md:text-7xl lg:text-8xl">
-          <TypedText text="Title Similarity" delay={600} />
+          <TypedText text="From Idea" delay={600} />
           <br />
           <span className="relative inline-block">
-            <TypedText text="& Compliance" delay={1300} />
+            <TypedText text="To Verified Identity" delay={1300} />
             <span
               className={`absolute -bottom-2 left-0 h-1 rounded-full transition-all duration-[1200ms] delay-[2500ms] ease-out ${mounted ? "w-full opacity-60" : "w-0 opacity-0"}`}
               style={{
@@ -136,10 +136,7 @@ export function HeroSection() {
 
       <ScrollReveal variant="fade-up" delay={400} duration={1000}>
         <p className="mt-8 max-w-2xl text-pretty text-center text-lg leading-relaxed text-muted-foreground md:text-xl">
-          Intelligent verification for the Press Registrar General of India.
-          Validate new title submissions against 160,000+ registered titles
-          using phonetic matching, semantic analysis, and regulatory compliance
-          enforcement -- all in under 2 seconds.
+          AI-powered title validation for the Press Registrar General of India.
         </p>
       </ScrollReveal>
 

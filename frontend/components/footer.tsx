@@ -1,6 +1,6 @@
 "use client"
 
-import { FileCheck } from "lucide-react"
+import Image from "next/image"
 import { ScrollReveal } from "@/components/scroll-reveal"
 
 const links = {
@@ -23,18 +23,22 @@ export function Footer() {
         <div className="grid gap-12 md:grid-cols-4">
           <ScrollReveal variant="converge-right" duration={800}>
             <div>
-              <a href="#" className="group flex items-center gap-2" aria-label="TitleGuard home">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 transition-all duration-300 group-hover:bg-primary/20">
-                  <FileCheck className="h-5 w-5 text-primary" />
+              <a href="#" className="group flex items-center gap-2" aria-label="Title Integrity System home">
+                <div className="flex items-center justify-center transition-all duration-300 group-hover:scale-105">
+                  <Image
+                    src="/custom-logo.svg"
+                    alt="Logo"
+                    width={32}
+                    height={32}
+                    className="h-8 w-auto"
+                  />
                 </div>
                 <span className="text-lg font-semibold text-foreground">
-                  TitleGuard
+                  Title Integrity System
                 </span>
               </a>
               <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
-                Intelligent title verification for the Press Registrar General
-                of India. Ensuring uniqueness, compliance, and integrity across
-                160,000+ registered press titles.
+                AI-powered title validation for the Press Registrar General of India.
               </p>
             </div>
           </ScrollReveal>
@@ -66,7 +70,7 @@ export function Footer() {
         <ScrollReveal variant="fade-up" delay={200} duration={800}>
           <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-[rgba(16,185,129,0.08)] pt-8 md:flex-row">
             <p className="text-sm text-muted-foreground">
-              {"2026 TitleGuard - PRGI Title Verification System. All rights reserved."}
+              {"2026 Title Integrity System - PRGI Title Verification System. All rights reserved."}
             </p>
             <div className="flex gap-6">
               {["GitHub", "Documentation", "Contact"].map((item) => (
